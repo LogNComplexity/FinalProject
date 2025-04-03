@@ -1,4 +1,6 @@
 import heapq
+import math
+from math import radians, cos, sin, asin, sqrt
 
 def A_Star(graph, start, goal, heuristic):
     """
@@ -90,16 +92,44 @@ def generate_graph(list):
 
     return s.get_graph()
 
-def parse_connections(filename):
-    with open(filename, 'r') as file:
-        next(file)  # Skip the first line (header)
-        adjacency_list = []
+def haversine(lat1, lon1, lat2, lon2):
+    # Convert latitude and longitude from degrees to radians
+    lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
+
+    # Haversine formula
+    dlat = lat2 - lat1
+    dlon = lon2 - lon1
+    a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+
+    # Radius of Earth in kilometers (change to 3958.8 for miles)
+    R = 6371  
+    distance = R * c
+
+    return distance  # Distance in kilometers
+
+def parse_connections(filename, filename2):
+    with open(filename, 'r') as london_connections, open(filename2, 'r') as london_stations :
         
-        for line in file:
+        next(london_stations)
+        adjacency_list = []
+        locations ={}
+        for line in london_stations:
+            parts = line.strip().split(',')
+            locations[parts[0]] = (parts[1], parts[2])
+
+        next(london_connections)  # Skip the first line (header)
+        
+        for line in london_connections:
             parts = line.strip().split(',')
             node1 = parts[0]
             node2 = parts[1]
-            adjacency_list.append((node1, node2))
+            lat1, lon1 = locations[node1]
+            
+            lat2,lon2 = locations[node2]
+            
+            weight = haversine(float(lat1),float(lon1),float(lat2),float(lon2))
+            adjacency_list.append((node1, node2, weight))
     
     return adjacency_list  # Return outside the loop
-print(parse_connections("london_connections.csv"))
+print(parse_connections("london_connections.csv", "london_stations.csv"))
