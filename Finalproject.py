@@ -2,9 +2,6 @@ import heapq
 import math
 from math import radians, cos, sin, asin, sqrt
 
-# below is code template for part 2
-
-
 
 
 
@@ -129,7 +126,7 @@ def A_Star(graph, start, goal, heuristic):
     
     return ([], float('inf'))  # No path found
 
-class DirectedWeightedGraph:
+class UnDirectedWeightedGraph:
 
     def __init__(self):
         self.adj = {}
@@ -149,7 +146,9 @@ class DirectedWeightedGraph:
     def add_edge(self, node1, node2, weight):
         if node2 not in self.adj[node1]:
             self.adj[node1].append(node2)
+            self.adj[node2].append(node1)
         self.weights[(node1, node2)] = weight
+        self.weights[(node2, node1)] = weight
 
     def get_weight(self, node1, node2):
         
@@ -180,7 +179,7 @@ def haversine(lat1, lon1, lat2, lon2):
     return distance  # Distance in kilometers
 
 def generate_graph(filename, filename2):
-    graph = DirectedWeightedGraph()
+    graph = UnDirectedWeightedGraph()
 
     with open(filename, 'r') as london_connections, open(filename2, 'r') as london_stations :
         
@@ -218,6 +217,7 @@ def generate_graph(filename, filename2):
 
 def heuristic_calulater(graph, dst):
 
+
     heuristic = {}
     coordinates =  graph.get_coordinates()
     for src in graph.get_graph():
@@ -229,13 +229,187 @@ def heuristic_calulater(graph, dst):
 
     return heuristic
 
+class Item:
+    def __init__(self, value, key):
+        self.key = key
+        self.value = value
+    
+    def __str__(self):
+        return "(" + str(self.key) + "," + str(self.value) + ")"
+
+class Heap:
+    def __init__(self, data):
+        self.items = data
+        self.length = len(data)
+        self.build_heap()
+
+        # add a map based on input node
+        self.map = {}
+        for i in range(self.length):
+            self.map[self.items[i].value] = i
+
+    def find_left_index(self,index):
+        return 2 * (index + 1) - 1
+
+    def find_right_index(self,index):
+        return 2 * (index + 1)
+
+    def find_parent_index(self,index):
+        return (index + 1) // 2 - 1  
+    
+    def heapify(self, index):
+        smallest_known_index = index
+
+        if self.find_left_index(index) < self.length and self.items[self.find_left_index(index)].key < self.items[index].key:
+            smallest_known_index = self.find_left_index(index)
+
+        if self.find_right_index(index) < self.length and self.items[self.find_right_index(index)].key < self.items[smallest_known_index].key:
+            smallest_known_index = self.find_right_index(index)
+
+        if smallest_known_index != index:
+            self.items[index], self.items[smallest_known_index] = self.items[smallest_known_index], self.items[index]
+            
+            # update map
+            self.map[self.items[index].value] = index
+            self.map[self.items[smallest_known_index].value] = smallest_known_index
+
+            # recursive call
+            self.heapify(smallest_known_index)
+
+    def build_heap(self,):
+        for i in range(self.length // 2 - 1, -1, -1):
+            self.heapify(i) 
+
+    def insert(self, node):
+        if len(self.items) == self.length:
+            self.items.append(node)
+        else:
+            self.items[self.length] = node
+        self.map[node.value] = self.length
+        self.length += 1
+        self.swim_up(self.length - 1)
+
+    def insert_nodes(self, node_list):
+        for node in node_list:
+            self.insert(node)
+
+    def swim_up(self, index):
+        
+        while index > 0 and self.items[index].key < self.items[self.find_parent_index(index)].key:
+            #swap values
+            self.items[index], self.items[self.find_parent_index(index)] = self.items[self.find_parent_index(index)], self.items[index]
+            #update map
+            self.map[self.items[index].value] = index
+            self.map[self.items[self.find_parent_index(index)].value] = self.find_parent_index(index)
+            index = self.find_parent_index(index)
+
+    def get_min(self):
+        if len(self.items) > 0:
+            return self.items[0]
+
+    def extract_min(self,):
+        #xchange
+        self.items[0], self.items[self.length - 1] = self.items[self.length - 1], self.items[0]
+        #update map
+        self.map[self.items[self.length - 1].value] = self.length - 1
+        self.map[self.items[0].value] = 0
+
+        min_node = self.items[self.length - 1]
+        self.length -= 1
+        self.map.pop(min_node.value)
+        self.heapify(0)
+        return min_node
+
+    def decrease_key(self, value, new_key):
+        if new_key >= self.items[self.map[value]].key:
+            return
+        index = self.map[value]
+        self.items[index].key = new_key
+        self.swim_up(index)
+
+    def get_element_from_value(self, value):
+        return self.items[self.map[value]]
+
+    def is_empty(self):
+        return self.length == 0
+    
+    def __str__(self):
+        height = math.ceil(math.log(self.length + 1, 2))
+        whitespace = 2 ** height + height
+        s = ""
+        for i in range(height):
+            for j in range(2 ** i - 1, min(2 ** (i + 1) - 1, self.length)):
+                s += " " * whitespace
+                s += str(self.items[j]) + " "
+            s += "\n"
+            whitespace = whitespace // 2
+        return s
+
+
+def dijkstra(graphInput, source, target):
+    graph = graphInput.get_graph()
+    
+    distances = {node: float('inf') for node in graph}
+    predecessors = {node: None for node in graph}  # To reconstruct paths
+    distances[source] = 0
+    heap = Heap([])
+    
+    # Insert all nodes with their distances
+    for node in graph:
+        heap.insert(Item(node, distances[node]))
+    
+    while not heap.is_empty():
+        u = heap.extract_min().value  # Node with min distance
+        
+        # Early exit if we've found the target
+        if u == target:
+            break
+        
+        for v in graph[u]:
+            new_distance = distances[u] + graphInput.get_weight(u, v)
+            if new_distance < distances[v]:
+                distances[v] = new_distance
+                predecessors[v] = u  # Update predecessor
+                heap.decrease_key(v, new_distance)  # Update priority
+    
+    # Reconstruct the path from source to target
+    path = []
+    current_node = target
+    
+    # If target is unreachable, return an empty path
+    if distances[target] == float('inf'):
+        return distances, []
+    
+    # Backtrack from target to source
+    while current_node is not None:
+        path.append(current_node)
+        current_node = predecessors[current_node]
+    
+    path.reverse()  # Reverse to get source -> target order
+    
+    return distances, path
+
+
 def experiment():
     graph = generate_graph("london_connections.csv", "london_stations.csv")
-    heuristic = heuristic_calulater(graph, '163')
-    
-    return A_Star(graph, '11', '163', heuristic)  # Return the result
+    heuristic = heuristic_calulater(graph, '163')  
 
-print(experiment())  
+    src = '184'
+    dst = '11'
+    
+    # Run A* and Dijkstra
+    a_star_path = A_Star(graph, src, dst, heuristic)
+    dijkstra_distances, dijkstra_path = dijkstra(graph, src, dst)
+    
+    print("\n")  # Print newline separately
+    return a_star_path, dijkstra_path
+
+# Example usage
+a_star_result, dijkstra_result = experiment()
+print("A* Path:", a_star_result)
+print("Dijkstra Path:", dijkstra_result)
+
+
 
 
 
