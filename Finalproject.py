@@ -234,7 +234,7 @@ def experiment():
     heuristic = heuristic_calulater(graph, '163')
     
     return A_Star(graph, '11', '163', heuristic)  # Return the result
-print("sd")
+
 print(experiment())  
 
 
