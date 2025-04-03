@@ -19,33 +19,39 @@ def A_Star(graph, start, goal, heuristic):
     cameFrom = {}
     
     # gScore stores the cost from start to each node, defaulting to infinity.
-    gScore = {node: float('inf') for node in graph}
+    gScore = {node: float('inf') for node in graph.get_graph()}
     gScore[start] = 0
     
     # fScore[n] = gScore[n] + h(n), representing our best guess at total cost.
-    fScore = {node: float('inf') for node in graph}
+    fScore = {node: float('inf') for node in graph.get_graph()}
     fScore[start] = heuristic[start]
 
 
     #graph adjacency lists and weights
     neighbours = graph.get_graph()
-    weights = graph.get_weights()    
+    
+        
     while openSet:
         # Get the node with the lowest fScore value
         _, current = heapq.heappop(openSet)
         
+        
         if current == goal:
-            # Reconstruct path
+            
             path = []
             while current in cameFrom:
+                
                 path.append(current)
                 current = cameFrom[current]
             path.append(start)
             path.reverse()
+            
             return cameFrom, (path, gScore[goal])
         
         for neighbor in neighbours[current]:
-            weight = weights[(current,neighbor)]
+            
+            
+            weight = graph.get_weight(current,neighbor)
             tentative_gScore = gScore[current] + weight
             
             if tentative_gScore < gScore[neighbor]:
@@ -74,7 +80,8 @@ class DirectedWeightedGraph:
         self.coordinates[node] = (lat,lon)
 
     def add_node(self, node):
-        self.adj[node] = []
+        if node not in self.adj:   # Only add if not already present
+            self.adj[node] = []
 
     def add_edge(self, node1, node2, weight):
         if node2 not in self.adj[node1]:
@@ -119,7 +126,7 @@ def generate_graph(filename, filename2):
         
         for line in london_stations:
             parts = line.strip().split(',')
-            graph.add_coordinate[parts[0]] = (parts[1], parts[2])
+            graph.add_coordinate(parts[0], parts[1], parts[2])
 
         locations = graph.get_coordinates()
 
@@ -141,6 +148,7 @@ def generate_graph(filename, filename2):
         node1, node2, weight = adjacency_list[i]
         graph.add_node(node1)
         graph.add_node(node2)
+        
         graph.add_edge(node1, node2, weight)
 
     return graph
@@ -148,14 +156,24 @@ def generate_graph(filename, filename2):
 def heuristic_calulater(graph, dst):
 
     heuristic = {}
+    coordinates =  graph.get_coordinates()
     for src in graph.get_graph():
 
-        lat1, lon1 = graph.get_coordinates()[src]
-        lat2,lon2 = graph.get_coordinates()[dst]
+        lat1, lon1 = coordinates[src]
+        lat2,lon2 = coordinates[dst]
             
         heuristic[src] = haversine(float(lat1),float(lon1),float(lat2),float(lon2))
 
     return heuristic
+
+def experiment():
+    graph = generate_graph("london_connections.csv", "london_stations.csv")
+    heuristic = heuristic_calulater(graph, '163')
+    
+    return A_Star(graph, '11', '163', heuristic)  # Return the result
+
+print(experiment())  
+
 
 
 
