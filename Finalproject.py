@@ -1,8 +1,38 @@
 import heapq
 import math
 from math import radians, cos, sin, asin, sqrt
+import os
+import random
+import time
+import timeit 
+import matplotlib.pyplot as plt
+import numpy as np
+import math
 
 
+
+def draw_plot(run_arr1, mean1, blueBars ,run_arr2, mean2, redBars, case):
+    x1 = np.arange(0, len(run_arr1), 1)
+    x2 = np.arange(len(run_arr1), len(run_arr1) + len(run_arr2), 1)
+
+    fig = plt.figure(figsize=(20, 8))
+
+    # Plot first array in blue
+    plt.bar(x1, run_arr1, color="blue", label= blueBars)
+
+    # Plot second array in red
+    plt.bar(x2, run_arr2, color="red", label= redBars)
+
+    # Mean lines
+    plt.axhline(mean1, color="blue", linestyle="--", linewidth = 2 ,label="Avg"+ blueBars, xmin = 0.5, xmax= 1)
+    plt.axhline(mean2, color="red", linestyle="--", linewidth = 2 ,label="Avg" + redBars, xmin = 0, xmax = 0.5)
+
+    plt.xlabel("Iterations")
+    plt.ylabel("Run time")
+    plt.title("Run time for " + blueBars +" in blue and "+ redBars+" in red " + case)
+
+    plt.legend()
+    plt.show()
 
 
 
@@ -390,24 +420,63 @@ def dijkstra(graphInput, source, target):
     return distances, path
 
 
+
+def all_pairs(Graph):
+    list_of_nodes = []
+    all_pair = []
+    graph = Graph.get_graph()
+
+    for node in graph:
+        list_of_nodes.append(node)
+
+    for i in range(len(list_of_nodes)):
+        for j in range(i+1, len(list_of_nodes)):
+            all_pair.append((list_of_nodes[i],list_of_nodes[j]))
+
+    return all_pair
+
+
+
+
 def experiment():
     graph = generate_graph("london_connections.csv", "london_stations.csv")
     heuristic = heuristic_calulater(graph, '163')  
+    
+    all_possible_pairs = all_pairs(graph)
 
-    src = '184'
-    dst = '11'
-    
-    # Run A* and Dijkstra
-    a_star_path = A_Star(graph, src, dst, heuristic)
-    dijkstra_distances, dijkstra_path = dijkstra(graph, src, dst)
-    
-    print("\n")  # Print newline separately
-    return a_star_path, dijkstra_path
+    run_times_dijkstra =[]
+    run_times_A_star =[]
+
+    for i in range(len(all_possible_pairs)):
+        src, dst = all_possible_pairs[i]
+        
+        
+        start = timeit.default_timer()
+        # Run A*
+        A_Star(graph, src, dst, heuristic)
+        stop = timeit.default_timer()
+        run_times_A_star.append(stop-start)
+
+
+        start = timeit.default_timer()
+        dijkstra(graph, src, dst)
+        stop = timeit.default_timer()
+        run_times_dijkstra.append(stop-start)
+
+    total_time_A_star = 0
+    total_time_dijkstra = 0
+    for i in range(len(run_times_A_star)):
+        total_time_A_star += run_times_A_star[i]
+        total_time_dijkstra += run_times_dijkstra[i]
+
+    mean_A_star = total_time_A_star/len(run_times_A_star)
+    mean_dijkstra = total_time_dijkstra/ len(run_times_dijkstra)
+    draw_plot(run_times_A_star,mean_A_star, "A star algorithm",run_times_dijkstra, mean_dijkstra, "Dijkstra algorithm","London subway System")
+        
+    return 
 
 # Example usage
-a_star_result, dijkstra_result = experiment()
-print("A* Path:", a_star_result)
-print("Dijkstra Path:", dijkstra_result)
+experiment()
 
 
 
