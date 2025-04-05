@@ -440,7 +440,7 @@ def all_pairs(Graph):
 
 def experiment():
     graph = generate_graph("london_connections.csv", "london_stations.csv")
-    heuristic = heuristic_calulater(graph, '163')  
+     
     
     all_possible_pairs = all_pairs(graph)
 
@@ -452,6 +452,8 @@ def experiment():
         
         
         start = timeit.default_timer()
+        # calculate heuristic
+        heuristic = heuristic_calulater(graph, dst)
         # Run A*
         A_Star(graph, src, dst, heuristic)
         stop = timeit.default_timer()
