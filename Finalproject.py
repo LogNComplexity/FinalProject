@@ -271,12 +271,14 @@ class Heap:
     def __init__(self, data):
         self.items = data
         self.length = len(data)
-        self.build_heap()
-
         # add a map based on input node
         self.map = {}
         for i in range(self.length):
             self.map[self.items[i].value] = i
+
+        self.build_heap()
+
+        
 
     def find_left_index(self,index):
         return 2 * (index + 1) - 1
@@ -438,7 +440,9 @@ def all_pairs(Graph):
 
 
 
-def experiment():
+# part 5 experiment
+
+def experiment5():
     graph = generate_graph("london_connections.csv", "london_stations.csv")
      
     
@@ -478,7 +482,7 @@ def experiment():
     return 
 
 # Example usage
-experiment()
+experiment5()
 
 
 
