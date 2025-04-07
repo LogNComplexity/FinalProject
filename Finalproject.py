@@ -1002,8 +1002,9 @@ def experiment_5():
         
     return 
 
-# Example Usage
-# experiment_5()
+
+experiment_2()
+experiment_5()
 
 
 
