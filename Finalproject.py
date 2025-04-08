@@ -769,7 +769,7 @@ def A_Star_part4(graph, start, goal, heuristic):
 # part 5 A*
 #############################################################################################################################
 def A_Star(graph, start, goal, heuristic):
-    
+    visited_nodes = 0
     # The set of discovered nodes that may need to be (re-)expanded.
     openSet = [(heuristic[start], start)]  # Priority queue (min-heap)
     
@@ -791,6 +791,7 @@ def A_Star(graph, start, goal, heuristic):
         
     while openSet:
         # Get the node with the lowest fScore value
+        visited_nodes += 1
         _, current = heapq.heappop(openSet)
         
         
@@ -804,7 +805,7 @@ def A_Star(graph, start, goal, heuristic):
             path.append(start)
             path.reverse()
             
-            return (path, gScore[goal])
+            return (path, gScore[goal]) , visited_nodes
         
         for neighbor in neighbours[current]:
             
@@ -819,7 +820,7 @@ def A_Star(graph, start, goal, heuristic):
                 fScore[neighbor] = tentative_gScore + heuristic[neighbor]
                 heapq.heappush(openSet, (fScore[neighbor], neighbor))
     
-    return ([], float('inf'))  # No path found
+    return ([], float('inf')) , visited_nodes  # No path found
         
 
 def haversine(lat1, lon1, lat2, lon2):
@@ -895,6 +896,7 @@ def heuristic_calulater(graph, dst):
 
 def dijkstra(graphInput, source, target):
     graph = graphInput.get_graph()
+    visited_nodes = 0
     
     distances = {node: float('inf') for node in graph}
     predecessors = {node: None for node in graph}  # To reconstruct paths
@@ -906,6 +908,7 @@ def dijkstra(graphInput, source, target):
         heap.insert(Item(node, distances[node]))
     
     while not heap.is_empty():
+        visited_nodes +=1
         u = heap.extract_min().value  # Node with min distance
         
         # Early exit if we've found the target
@@ -934,7 +937,7 @@ def dijkstra(graphInput, source, target):
     
     path.reverse()  # Reverse to get source -> target order
     
-    return distances, path
+    return distances, path , visited_nodes
 
 
 
@@ -971,7 +974,7 @@ def experiment_5():
 
     run_times_dijkstra =[]
     run_times_A_star =[]
-
+    
     for i in range(len(all_possible_pairs)):
         src, dst = all_possible_pairs[i]
         
@@ -989,7 +992,44 @@ def experiment_5():
         dijkstra(graph, src, dst)
         stop = timeit.default_timer()
         run_times_dijkstra.append(stop-start)
+    
+    ### test to see how many nodes are visited
+    for i in range(20):
+        
+        
 
+        src, dst = all_possible_pairs[i]
+        heuristic = heuristic_calulater(graph, dst)
+
+        _ , path , d_visted_nodes = dijkstra(graph, src, dst)
+        _, a_visted_nodes = A_Star(graph, src, dst, heuristic)
+
+        lines = []
+        visited_stations =[]
+        number_of_lines = 0
+        for station in path:
+            with open("london_connections.csv", 'r') as london_connections:
+
+                next(london_connections)  # Skip the first line (header)
+        
+                for line in london_connections:
+                    parts = line.strip().split(',')
+                    if (station == parts[0] or station == parts[1]) and not (parts[3] in lines or station in visited_stations):
+                        visited_stations.append(station)
+                        lines.append(parts[3])
+                        number_of_lines +=1
+                        
+
+
+
+
+
+
+
+
+        print("Dijkstra's number of visted nodes", d_visted_nodes, "A star's number of visted nodes", a_visted_nodes, "number of lines in shortest path", number_of_lines)
+
+    
     total_time_A_star = 0
     total_time_dijkstra = 0
     for i in range(len(run_times_A_star)):
